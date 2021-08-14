@@ -17,14 +17,14 @@ cat $TMPDIR/config.json | \
     jq '.SqlSettings.DriverName = "postgres"' > $TMPDIR/config.json
 
 echo "Running the migration"
-make ARGS="version --config $TMPDIR/config.json" run-cli
+make ARGS="db migrate --config $TMPDIR/config.json" run-cli
 
 echo "Setting up config for fresh db setup"
 cat $TMPDIR/config.json | \
     jq '.SqlSettings.DataSource = "postgres://mmuser:mostest@localhost:5432/latest?sslmode=disable&connect_timeout=10"' > $TMPDIR/config.json
 
 echo "Setting up fresh db"
-make ARGS="version --config $TMPDIR/config.json" run-cli
+make ARGS="db migrate --config $TMPDIR/config.json" run-cli
 
 for i in "ChannelMembers MentionCountRoot" "ChannelMembers MsgCountRoot" "Channels TotalMsgCountRoot"; do
     a=( $i );

@@ -36,9 +36,18 @@ This command should be run using a database configuration DSN.`,
 	RunE: initDbCmdF,
 }
 
+var MigrateDbCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: "Migrate the database",
+	Long:  `Migrate the database.`,
+	Args:  cobra.NoArgs,
+	RunE:  migrateDbCmdF,
+}
+
 func init() {
 	DbCmd.AddCommand(
 		InitDbCmd,
+		MigrateDbCmd,
 	)
 
 	RootCmd.AddCommand(
@@ -68,5 +77,14 @@ func initDbCmdF(command *cobra.Command, _ []string) error {
 
 	fmt.Println("Database store correctly initialised")
 
+	return nil
+}
+
+func migrateDbCmdF(command *cobra.Command, args []string) error {
+	a, err := InitDBCommandContextCobra(command)
+	if err != nil {
+		return err
+	}
+	defer a.Srv().Shutdown()
 	return nil
 }

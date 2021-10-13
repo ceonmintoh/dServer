@@ -5,6 +5,7 @@ package app
 
 import (
 	"net/http"
+	"strconv"
 
 	"golang.org/x/sync/errgroup"
 
@@ -31,7 +32,7 @@ func (a *App) GetAnalytics(name string, teamID string) (model.AnalyticsRows, *mo
 	}
 
 	if name == "standard" {
-		var rows model.AnalyticsRows = make([]*model.AnalyticsRow, 11)
+		var rows model.AnalyticsRows = make([]*model.AnalyticsRow, 12)
 		rows[0] = &model.AnalyticsRow{Name: "channel_open_count", Value: 0}
 		rows[1] = &model.AnalyticsRow{Name: "channel_private_count", Value: 0}
 		rows[2] = &model.AnalyticsRow{Name: "post_count", Value: 0}
@@ -43,6 +44,7 @@ func (a *App) GetAnalytics(name string, teamID string) (model.AnalyticsRows, *mo
 		rows[8] = &model.AnalyticsRow{Name: "daily_active_users", Value: 0}
 		rows[9] = &model.AnalyticsRow{Name: "monthly_active_users", Value: 0}
 		rows[10] = &model.AnalyticsRow{Name: "inactive_user_count", Value: 0}
+		rows[11] = &model.AnalyticsRow{Name: "install_time", Value: 0}
 
 		var g errgroup.Group
 		var openChannelsCount int64
@@ -121,6 +123,22 @@ func (a *App) GetAnalytics(name string, teamID string) (model.AnalyticsRows, *mo
 			return nil
 		})
 
+		var installTime int64
+		g.Go(func() error {
+			var err error
+			systemData, err := a.Srv().Store.System().GetByName(model.SystemInstallationDateKey)
+			if err != nil {
+				return model.NewAppError("GetAnalytics", "app.system.get_by_name.app_error", nil, err.Error(), http.StatusInternalServerError)
+			}
+
+			value, err := strconv.ParseInt(systemData.Value, 10, 64)
+			if err != nil {
+				return model.NewAppError("GetAnalytics", "app.system_install_date.parse_int.app_error", nil, err.Error(), http.StatusInternalServerError)
+			}
+			installTime = value
+			return nil
+		})
+
 		if err := g.Wait(); err != nil {
 			return nil, err.(*model.AppError)
 		}
@@ -143,6 +161,7 @@ func (a *App) GetAnalytics(name string, teamID string) (model.AnalyticsRows, *mo
 		}
 
 		rows[4].Value = float64(teamsCount)
+		rows[11].Value = float64(installTime)
 
 		// If in HA mode then aggregate all the stats
 		if a.Cluster() != nil && *a.Config().ClusterSettings.Enable {

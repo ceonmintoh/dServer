@@ -124,3 +124,7 @@ func (o *TeamMember) PreUpdate() {
 func (o *TeamMember) GetRoles() []string {
 	return strings.Fields(o.Roles)
 }
+
+func (o *TeamMember) DeleteAt_() float64 {
+	return float64(o.DeleteAt)
+}

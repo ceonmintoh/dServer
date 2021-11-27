@@ -715,7 +715,10 @@ func testChannelStoreDelete(t *testing.T, ss store.Store) {
 	nErr = ss.Channel().Delete(o3.Id, model.GetMillis())
 	require.NoError(t, nErr, nErr)
 
-	list, nErr := ss.Channel().GetChannels(o1.TeamId, m1.UserId, false, 0)
+	list, nErr := ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: false,
+		LastDeleteAt:   0,
+	})
 	require.NoError(t, nErr)
 	require.Len(t, list, 1, "invalid number of channels")
 
@@ -726,7 +729,10 @@ func testChannelStoreDelete(t *testing.T, ss store.Store) {
 	cresult := ss.Channel().PermanentDelete(o2.Id)
 	require.NoError(t, cresult)
 
-	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, false, 0)
+	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: false,
+		LastDeleteAt:   0,
+	})
 	if assert.Error(t, nErr) {
 		var nfErr *store.ErrNotFound
 		require.True(t, errors.As(nErr, &nfErr))
@@ -3259,12 +3265,13 @@ func testChannelDeleteMemberStore(t *testing.T, ss store.Store) {
 
 func testChannelStoreGetChannels(t *testing.T, ss store.Store) {
 	team := model.NewId()
-	o1 := model.Channel{}
+	o1 := &model.Channel{}
 	o1.TeamId = team
 	o1.DisplayName = "Channel1"
 	o1.Name = NewTestId()
 	o1.Type = model.ChannelTypeOpen
-	_, nErr := ss.Channel().Save(&o1, -1)
+	var nErr error
+	o1, nErr = ss.Channel().Save(o1, -1)
 	require.NoError(t, nErr)
 
 	o2 := model.Channel{}
@@ -3311,7 +3318,10 @@ func testChannelStoreGetChannels(t *testing.T, ss store.Store) {
 	_, err = ss.Channel().SaveMember(&m4)
 	require.NoError(t, err)
 
-	list, nErr := ss.Channel().GetChannels(o1.TeamId, m1.UserId, false, 0)
+	list, nErr := ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: false,
+		LastDeleteAt:   0,
+	})
 	require.NoError(t, nErr)
 	require.Len(t, list, 3)
 	require.Equal(t, o1.Id, list[0].Id, "missing channel")
@@ -3338,6 +3348,25 @@ func testChannelStoreGetChannels(t *testing.T, ss store.Store) {
 	_, ok = ids4[o1.Id]
 	require.True(t, ok, "missing channel")
 
+	// Sleeping to guarantee that the
+	// UpdateAt is different.
+	// The proper way would be to set UpdateAt during channel creation itself,
+	// but the *Channel.PreSave method ignores any existing CreateAt value.
+	// TODO: check if using an existing CreateAt breaks anything.
+	time.Sleep(time.Millisecond)
+
+	now := model.GetMillis()
+	_, nErr = ss.Channel().Update(o1)
+	require.NoError(t, nErr)
+
+	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: false,
+		LastUpdateAt:   int(now),
+	})
+	require.NoError(t, nErr)
+	// should return 1
+	require.Len(t, list, 1)
+
 	nErr = ss.Channel().Delete(o2.Id, 10)
 	require.NoError(t, nErr)
 
@@ -3345,13 +3374,19 @@ func testChannelStoreGetChannels(t *testing.T, ss store.Store) {
 	require.NoError(t, nErr)
 
 	// should return 1
-	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, false, 0)
+	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: false,
+		LastDeleteAt:   0,
+	})
 	require.NoError(t, nErr)
 	require.Len(t, list, 1)
 	require.Equal(t, o1.Id, list[0].Id, "missing channel")
 
 	// Should return all
-	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, true, 0)
+	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: true,
+		LastDeleteAt:   0,
+	})
 	require.NoError(t, nErr)
 	require.Len(t, list, 3)
 	require.Equal(t, o1.Id, list[0].Id, "missing channel")
@@ -3359,7 +3394,10 @@ func testChannelStoreGetChannels(t *testing.T, ss store.Store) {
 	require.Equal(t, o3.Id, list[2].Id, "missing channel")
 
 	// Should still return all
-	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, true, 10)
+	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: true,
+		LastDeleteAt:   10,
+	})
 	require.NoError(t, nErr)
 	require.Len(t, list, 3)
 	require.Equal(t, o1.Id, list[0].Id, "missing channel")
@@ -3367,7 +3405,10 @@ func testChannelStoreGetChannels(t *testing.T, ss store.Store) {
 	require.Equal(t, o3.Id, list[2].Id, "missing channel")
 
 	// Should return 2
-	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, true, 20)
+	list, nErr = ss.Channel().GetChannels(o1.TeamId, m1.UserId, &model.ChannelSearchOpts{
+		IncludeDeleted: true,
+		LastDeleteAt:   20,
+	})
 	require.NoError(t, nErr)
 	require.Len(t, list, 2)
 	require.Equal(t, o1.Id, list[0].Id, "missing channel")

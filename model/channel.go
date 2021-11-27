@@ -6,11 +6,14 @@ package model
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 	"net/http"
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/pkg/errors"
 )
 
 type ChannelType string
@@ -141,6 +144,8 @@ type ChannelSearchOpts struct {
 	Private                  bool
 	Page                     *int
 	PerPage                  *int
+	LastDeleteAt             int
+	LastUpdateAt             int
 }
 
 type ChannelMemberCountByGroup struct {
@@ -155,6 +160,18 @@ func WithID(ID string) ChannelOption {
 	return func(channel *Channel) {
 		channel.Id = ID
 	}
+}
+
+func (o *Channel) CreateAt_() float64 {
+	return float64(o.CreateAt)
+}
+
+func (o *Channel) UpdateAt_() float64 {
+	return float64(o.UpdateAt)
+}
+
+func (o *Channel) DeleteAt_() float64 {
+	return float64(o.DeleteAt)
 }
 
 func (o *Channel) DeepCopy() *Channel {
@@ -301,6 +318,24 @@ func (o *Channel) GetOtherUserIdForDM(userId string) string {
 	}
 
 	return otherUserId
+}
+
+func (ChannelType) ImplementsGraphQLType(name string) bool {
+	return name == "ChannelType"
+}
+
+func (t ChannelType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(t))
+}
+
+func (t *ChannelType) UnmarshalGraphQL(input interface{}) error {
+	chType, ok := input.(string)
+	if !ok {
+		return errors.New("wrong type")
+	}
+
+	*t = ChannelType(chType)
+	return nil
 }
 
 func GetDMNameFromIds(userId1, userId2 string) string {

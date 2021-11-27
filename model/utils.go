@@ -117,6 +117,24 @@ func (m *StringMap) Scan(value interface{}) error {
 	return errors.New("received value is neither a byte slice nor string")
 }
 
+func (StringMap) ImplementsGraphQLType(name string) bool {
+	return name == "StringMap"
+}
+
+func (m StringMap) MarshalJSON() ([]byte, error) {
+	return json.Marshal((map[string]string)(m))
+}
+
+func (m *StringMap) UnmarshalGraphQL(input interface{}) error {
+	json, ok := input.(map[string]string)
+	if !ok {
+		return errors.New("wrong type")
+	}
+
+	*m = json
+	return nil
+}
+
 func (si *StringInterface) Scan(value interface{}) error {
 	if value == nil {
 		return nil

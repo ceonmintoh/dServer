@@ -1029,10 +1029,10 @@ func (s *TimerLayerChannelStore) GetChannelUnread(channelID string, userID strin
 	return result, err
 }
 
-func (s *TimerLayerChannelStore) GetChannels(teamID string, userID string, includeDeleted bool, lastDeleteAt int) (model.ChannelList, error) {
+func (s *TimerLayerChannelStore) GetChannels(teamID string, userID string, opts *model.ChannelSearchOpts) (model.ChannelList, error) {
 	start := timemodule.Now()
 
-	result, err := s.ChannelStore.GetChannels(teamID, userID, includeDeleted, lastDeleteAt)
+	result, err := s.ChannelStore.GetChannels(teamID, userID, opts)
 
 	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {
@@ -1349,6 +1349,22 @@ func (s *TimerLayerChannelStore) GetMembersForUser(teamID string, userID string)
 	return result, err
 }
 
+func (s *TimerLayerChannelStore) GetMembersForUserWithCursor(userID string, afterChannel string, afterUser string, limit int, lastUpdateAt int) (model.ChannelMembers, error) {
+	start := timemodule.Now()
+
+	result, err := s.ChannelStore.GetMembersForUserWithCursor(userID, afterChannel, afterUser, limit, lastUpdateAt)
+
+	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("ChannelStore.GetMembersForUserWithCursor", success, elapsed)
+	}
+	return result, err
+}
+
 func (s *TimerLayerChannelStore) GetMembersForUserWithPagination(userID string, page int, perPage int) (model.ChannelMembersWithTeamData, error) {
 	start := timemodule.Now()
 
@@ -1361,6 +1377,22 @@ func (s *TimerLayerChannelStore) GetMembersForUserWithPagination(userID string, 
 			success = "true"
 		}
 		s.Root.Metrics.ObserveStoreMethodDuration("ChannelStore.GetMembersForUserWithPagination", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerChannelStore) GetMembersInfoByChannelIds(channelIDs []string) (map[string][]*model.User, error) {
+	start := timemodule.Now()
+
+	result, err := s.ChannelStore.GetMembersInfoByChannelIds(channelIDs)
+
+	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("ChannelStore.GetMembersInfoByChannelIds", success, elapsed)
 	}
 	return result, err
 }
@@ -2282,6 +2314,22 @@ func (s *TimerLayerChannelMemberHistoryStore) DeleteOrphanedRows(limit int) (int
 			success = "true"
 		}
 		s.Root.Metrics.ObserveStoreMethodDuration("ChannelMemberHistoryStore.DeleteOrphanedRows", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerChannelMemberHistoryStore) GetChannelsLeftSince(userID string, since int64) ([]string, error) {
+	start := timemodule.Now()
+
+	result, err := s.ChannelMemberHistoryStore.GetChannelsLeftSince(userID, since)
+
+	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("ChannelMemberHistoryStore.GetChannelsLeftSince", success, elapsed)
 	}
 	return result, err
 }

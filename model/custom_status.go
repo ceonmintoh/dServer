@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/graph-gophers/graphql-go"
 )
 
 const (
@@ -59,6 +61,10 @@ func (cs *CustomStatus) AreDurationAndExpirationTimeValid() bool {
 	}
 
 	return false
+}
+
+func (cs *CustomStatus) ExpiresAt_() graphql.Time {
+	return graphql.Time{Time: cs.ExpiresAt}
 }
 
 func RuneToHexadecimalString(r rune) string {

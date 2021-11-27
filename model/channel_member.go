@@ -60,6 +60,26 @@ type ChannelMember struct {
 	ExplicitRoles    string    `json:"explicit_roles"`
 }
 
+func (cm *ChannelMember) LastViewedAt_() float64 {
+	return float64(cm.LastViewedAt)
+}
+
+func (cm *ChannelMember) MsgCount_() float64 {
+	return float64(cm.MsgCount)
+}
+
+func (cm *ChannelMember) MentionCount_() float64 {
+	return float64(cm.MentionCount)
+}
+
+func (cm *ChannelMember) MentionCountRoot_() float64 {
+	return float64(cm.MentionCountRoot)
+}
+
+func (cm *ChannelMember) LastUpdateAt_() float64 {
+	return float64(cm.LastUpdateAt)
+}
+
 // ChannelMemberWithTeamData contains ChannelMember appended with extra team information
 // as well.
 type ChannelMemberWithTeamData struct {

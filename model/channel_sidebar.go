@@ -4,7 +4,10 @@
 package model
 
 import (
+	"encoding/json"
 	"regexp"
+
+	"github.com/pkg/errors"
 )
 
 type SidebarCategoryType string
@@ -54,6 +57,10 @@ type SidebarCategoryWithChannels struct {
 	Channels []string `json:"channel_ids"`
 }
 
+func (sc SidebarCategoryWithChannels) ChannelIds() []string {
+	return sc.Channels
+}
+
 type SidebarCategoryOrder []string
 
 // OrderedSidebarCategories combines categories, their channel IDs and an array of Category IDs, sorted
@@ -82,4 +89,40 @@ func IsValidCategoryId(s string) bool {
 
 	// Or default categories can follow the pattern {type}_{userID}_{teamID}
 	return categoryIdPattern.MatchString(s)
+}
+
+func (SidebarCategoryType) ImplementsGraphQLType(name string) bool {
+	return name == "SidebarCategoryType"
+}
+
+func (t SidebarCategoryType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(t))
+}
+
+func (t *SidebarCategoryType) UnmarshalGraphQL(input interface{}) error {
+	chType, ok := input.(string)
+	if !ok {
+		return errors.New("wrong type")
+	}
+
+	*t = SidebarCategoryType(chType)
+	return nil
+}
+
+func (SidebarCategorySorting) ImplementsGraphQLType(name string) bool {
+	return name == "SidebarCategorySorting"
+}
+
+func (t SidebarCategorySorting) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(t))
+}
+
+func (t *SidebarCategorySorting) UnmarshalGraphQL(input interface{}) error {
+	chType, ok := input.(string)
+	if !ok {
+		return errors.New("wrong type")
+	}
+
+	*t = SidebarCategorySorting(chType)
+	return nil
 }
